@@ -1,4 +1,4 @@
-/* Copyright 2015 Google Inc. All Rights Reserved.
+/* Copyright 2015 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ TEST(ValidateGraphDefTest, TestValidGraph) {
   GraphDef graph_def;
   auto parser = protobuf::TextFormat::Parser();
   CHECK(parser.MergeFromString(graph_def_str, &graph_def)) << graph_def_str;
-  TF_ASSERT_OK(graph::ValidateGraphDef(graph_def, OpRegistry::Global()));
+  TF_ASSERT_OK(graph::ValidateGraphDef(graph_def, *OpRegistry::Global()));
 }
 
 TEST(ValidateGraphDefTest, GraphWithUnspecifiedDefaultAttr) {
@@ -58,15 +58,15 @@ TEST(ValidateGraphDefTest, GraphWithUnspecifiedDefaultAttr) {
   GraphDef graph_def;
   auto parser = protobuf::TextFormat::Parser();
   CHECK(parser.MergeFromString(graph_def_str, &graph_def)) << graph_def_str;
-  Status s = graph::ValidateGraphDef(graph_def, OpRegistry::Global());
+  Status s = graph::ValidateGraphDef(graph_def, *OpRegistry::Global());
   EXPECT_FALSE(s.ok());
   EXPECT_TRUE(StringPiece(s.ToString()).contains("NodeDef missing attr"));
 
   // Add the defaults.
-  TF_ASSERT_OK(AddDefaultAttrsToGraphDef(&graph_def, OpRegistry::Global(), 0));
+  TF_ASSERT_OK(AddDefaultAttrsToGraphDef(&graph_def, *OpRegistry::Global(), 0));
 
   // Validation should succeed.
-  TF_ASSERT_OK(graph::ValidateGraphDef(graph_def, OpRegistry::Global()));
+  TF_ASSERT_OK(graph::ValidateGraphDef(graph_def, *OpRegistry::Global()));
 }
 
 TEST(ValidateGraphDefTest, GraphWithUnspecifiedRequiredAttr) {
@@ -81,22 +81,24 @@ TEST(ValidateGraphDefTest, GraphWithUnspecifiedRequiredAttr) {
   GraphDef graph_def;
   auto parser = protobuf::TextFormat::Parser();
   CHECK(parser.MergeFromString(graph_def_str, &graph_def)) << graph_def_str;
-  Status s = graph::ValidateGraphDef(graph_def, OpRegistry::Global());
+  Status s = graph::ValidateGraphDef(graph_def, *OpRegistry::Global());
   EXPECT_FALSE(s.ok());
   EXPECT_TRUE(StringPiece(s.ToString()).contains("NodeDef missing attr"));
 
   // Add the defaults.
-  TF_ASSERT_OK(AddDefaultAttrsToGraphDef(&graph_def, OpRegistry::Global(), 0));
+  TF_ASSERT_OK(AddDefaultAttrsToGraphDef(&graph_def, *OpRegistry::Global(), 0));
 
   // Validation should still fail.
-  s = graph::ValidateGraphDef(graph_def, OpRegistry::Global());
+  s = graph::ValidateGraphDef(graph_def, *OpRegistry::Global());
   EXPECT_FALSE(s.ok());
   EXPECT_TRUE(StringPiece(s.ToString()).contains("NodeDef missing attr"));
 }
 
 TEST(ValidateGraphDefAgainstOpListTest, GraphWithOpOnlyInOpList) {
+  OpRegistrationData op_reg_data;
+  TF_ASSERT_OK(OpDefBuilder("UniqueSnowflake").Finalize(&op_reg_data));
   OpList op_list;
-  TF_ASSERT_OK(OpDefBuilder("UniqueSnowflake").Finalize(op_list.add_op()));
+  *op_list.add_op() = op_reg_data.op_def;
   const string graph_def_str = "node { name: 'A' op: 'UniqueSnowflake' }";
   GraphDef graph_def;
   auto parser = protobuf::TextFormat::Parser();
@@ -105,8 +107,10 @@ TEST(ValidateGraphDefAgainstOpListTest, GraphWithOpOnlyInOpList) {
 }
 
 TEST(ValidateGraphDefAgainstOpListTest, GraphWithGlobalOpNotInOpList) {
+  OpRegistrationData op_reg_data;
+  TF_ASSERT_OK(OpDefBuilder("NotAnywhere").Finalize(&op_reg_data));
   OpList op_list;
-  TF_ASSERT_OK(OpDefBuilder("NotAnywhere").Finalize(op_list.add_op()));
+  *op_list.add_op() = op_reg_data.op_def;
   const string graph_def_str = "node { name: 'A' op: 'FloatInput' }";
   GraphDef graph_def;
   auto parser = protobuf::TextFormat::Parser();

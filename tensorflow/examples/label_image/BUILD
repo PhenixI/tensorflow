@@ -1,5 +1,5 @@
 # Description:
-#   Tensorflow C++ inference example for labeling images.
+#   TensorFlow C++ inference example for labeling images.
 
 package(default_visibility = ["//tensorflow:internal"])
 
@@ -7,41 +7,37 @@ licenses(["notice"])  # Apache 2.0
 
 exports_files(["LICENSE"])
 
-cc_library(
-    name = "command_line_flags",
-    srcs = [
-        "command_line_flags.cc",
-        "command_line_flags.h",
-    ],
-    deps = [
-        "//tensorflow/core:tensorflow",
-    ],
-)
-
 cc_binary(
     name = "label_image",
     srcs = [
         "main.cc",
     ],
-    linkopts = ["-lm"],
-    deps = [
-        ":command_line_flags",
-        "//tensorflow/cc:cc_ops",
-        "//tensorflow/core:tensorflow",
-    ],
-)
-
-cc_test(
-    name = "command_line_flags_test",
-    srcs = [
-        "command_line_flags_test.cc",
-    ],
-    deps = [
-        ":command_line_flags",
-        "//tensorflow/core:tensorflow",
-        "//tensorflow/core:test_main",
-        "//tensorflow/core/platform/default/build_config:gtest",
-    ],
+    linkopts = select({
+        "//tensorflow:android": [
+            "-pie",
+            "-landroid",
+            "-ljnigraphics",
+            "-llog",
+            "-lm",
+            "-z defs",
+            "-s",
+            "-Wl,--exclude-libs,ALL",
+        ],
+        "//conditions:default": ["-lm"],
+    }),
+    deps = select({
+        "//tensorflow:android": [
+            # cc:cc_ops is used to include image ops (for label_image)
+            # Jpg, gif, and png related code won't be included
+            "//tensorflow/cc:cc_ops",
+            "//tensorflow/core:android_tensorflow_lib",
+        ],
+        "//conditions:default": [
+            "//tensorflow/cc:cc_ops",
+            "//tensorflow/core:framework_internal",
+            "//tensorflow/core:tensorflow",
+        ],
+    }),
 )
 
 filegroup(

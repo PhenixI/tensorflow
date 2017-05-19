@@ -1,4 +1,4 @@
-/* Copyright 2015 Google Inc. All Rights Reserved.
+/* Copyright 2015 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ namespace {
 static constexpr float kZLimit = 6.0;
 
 // A utility function to fill the given array with samples from the given
-// distribution, using the single adatper of the underlying generator
+// distribution, using the single adapter of the underlying generator
 template <class Distribution>
 void FillRandomsWithSingles(PhiloxRandom gen,
                             typename Distribution::ResultElementType* p,
@@ -70,7 +70,7 @@ void FillRandomsWithSingles(PhiloxRandom gen,
 //   z_limit: the maximum z-test we would consider the test to pass;
 template <typename T>
 bool CheckSamplesMoments(const std::vector<T>& samples,
-                         std::function<double(int)> theoretical_moments,
+                         const std::function<double(int)>& theoretical_moments,
                          int max_moments, int stride, T z_limit) {
   const T* const samples_data = &samples[0];
   const int samples_size = samples.size();
@@ -87,7 +87,7 @@ bool CheckSamplesMoments(const std::vector<T>& samples,
         break;
       }
       // moments[i] store the i-th order measured moments.
-      // bypass std::vector::opeartor[] because they are too slow in the debug
+      // bypass std::vector::operator[] because they are too slow in the debug
       // mode, given the large number of samples.
       moments_data[i] += moment;
       ++moments_sample_count_data[i];

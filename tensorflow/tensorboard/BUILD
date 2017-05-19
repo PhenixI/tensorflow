@@ -3,52 +3,40 @@
 
 package(default_visibility = ["//tensorflow:internal"])
 
-filegroup(
-    name = "tensorboard_frontend",
-    srcs = [
-        "dist/index.html",
-        "dist/tf-tensorboard.html",
-        "//tensorflow/tensorboard/bower:bower",
-        "TAG",
-    ] + glob(["lib/**/*"]),
-)
-
-py_library(
-    name = "tensorboard_handler",
-    srcs = ["backend/tensorboard_handler.py"],
-    deps = [
-        ":float_wrapper",
-        "//tensorflow/python:platform",
-        "//tensorflow/python:summary",
-    ],
-    srcs_version = "PY2AND3",
-)
-
-py_library(
-    name = "float_wrapper",
-    srcs = ["backend/float_wrapper.py"],
-    srcs_version = "PY2AND3",
-)
-
-py_test(
-    name = "float_wrapper_test",
-    size = "small",
-    srcs = ["backend/float_wrapper_test.py"],
-    deps = [
-        ":float_wrapper",
-        "//tensorflow/python:platform_test",
-    ],
-    srcs_version = "PY2AND3",
-)
+licenses(["notice"])  # Apache 2.0
 
 py_binary(
     name = "tensorboard",
-    srcs = ["backend/tensorboard.py"],
-    data = [":tensorboard_frontend"],
-    deps = [
-        ":tensorboard_handler",
-        "//tensorflow/python:platform",
-        "//tensorflow/python:summary",
-    ],
+    srcs = ["tensorboard.py"],
+    data = [":assets"],
     srcs_version = "PY2AND3",
+    deps = [
+        "//tensorflow/python:platform",
+        "//tensorflow/tensorboard/backend:application",
+        "//tensorflow/tensorboard/backend/event_processing:event_file_inspector",
+        "//tensorflow/tensorboard/plugins/projector:projector_plugin",
+        "//tensorflow/tensorboard/plugins/text:text_plugin",
+        "@org_pocoo_werkzeug//:werkzeug",
+    ],
+)
+
+filegroup(
+    name = "assets",
+    srcs = [
+        "TAG",
+        "//tensorflow/tensorboard/components:index.html",
+    ],
+)
+
+filegroup(
+    name = "all_files",
+    srcs = glob(
+        ["**"],
+        exclude = [
+            "METADATA",
+            "OWNERS",
+            "tensorboard.google.bzl",
+        ],
+    ),
+    tags = ["notsan"],
 )
